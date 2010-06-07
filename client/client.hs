@@ -34,19 +34,20 @@ evalOrder = do
     return b
 
 
-
+{-
 main = runDistributed 
         (ServerAddr "localhost" 1502) 
         (evalOrder) >>= putStrLn.show
 
+-}
 
 
-{-
 
 main = runDistributed 
         (ServerAddr "localhost" 1502) 
         (liftM3 (\ t1 t2 t3 -> t1++", " ++ t2++", " ++ t3) time time time) >>= putStrLn.show
 
+{-
 
 main = replicateM_ 100 $ do
         mapM_ 
