@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module RFunctions where
+
 import DeclsGenerator
 import ClientUtils
 
@@ -8,24 +9,24 @@ data PairII = PairII Integer Integer
 
 $genClientDecls
 
-fun :: PairII -> Distributed PairII
+fun :: PairII -> RemoteIO PairII
 
-sum' :: (Integer, Integer) -> Distributed Integer
+sum' :: (Integer, Integer) -> RemoteIO Integer
 
-double, negate' :: Integer -> Distributed Integer
+double, negate' :: Integer -> RemoteIO Integer
 
-lengths :: [Integer]->Distributed (Int, Int)
+lengths :: [Integer]->RemoteIO (Int, Int)
 
-strlen :: String -> Distributed Int
+strlen :: String -> RemoteIO Int
 
-odd' :: Integer -> Distributed Bool
+odd' :: Integer -> RemoteIO Bool
 
-unsupported :: Integer -> Distributed Integer
+unsupported :: Integer -> RemoteIO Integer
 
-time :: Distributed String
+time :: RemoteIO String
 
-number :: Distributed Integer
+number :: RemoteIO Integer
 
-sum'' :: Integer -> Integer -> Distributed Integer
+sum'' :: Integer -> Integer -> RemoteIO Integer
 
-max3 :: Integer -> Integer -> Integer -> Distributed Integer
+max3 :: Integer -> Integer -> Integer -> RemoteIO Integer

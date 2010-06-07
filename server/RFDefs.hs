@@ -4,6 +4,7 @@ module RFDefs where
 import Data.List
 import Data.Time
 import Control.Monad
+import Control.Monad.Trans
 
 import DDefs
 import ServerUtils
@@ -37,8 +38,8 @@ strlen = length
 odd' :: Integer -> Bool
 odd' = odd
 
-time :: IO String
-time = liftM show getZonedTime
+time :: RemoteIO String
+time = liftM show (liftIO getZonedTime)
 
 number :: Integer
 number = 42
