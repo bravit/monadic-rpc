@@ -1,10 +1,6 @@
 import ClientUtils
 import RFunctions
 
-import System.CPUTime
-import System.IO
-import Control.Monad.Trans
-
 
 evalSum = do
     number 1
@@ -12,6 +8,7 @@ evalSum = do
     number 10
     totalSum
 
-main = runDistributed 
-        (ServerAddr "localhost" 1500) 
-        evalSum >>= putStrLn.show
+main = do
+    cfg <- remoteConnectTo $ PeerAddr "localhost" 1500
+    runRemote cfg (evalSum) >>= putStrLn.show
+    remoteClose cfg

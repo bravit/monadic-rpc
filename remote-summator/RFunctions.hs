@@ -5,6 +5,9 @@ import ClientUtils
 
 $genClientDecls
 
-number :: Integer -> Distributed ()
+instance RemoteState Integer where
+    initState = 0
 
-totalSum :: Distributed Integer
+number :: Integer -> RemoteIO ()
+
+totalSum :: RemoteIO Integer

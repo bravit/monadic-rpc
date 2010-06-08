@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-} 
+{-# LANGUAGE GeneralizedNewtypeDeriving,FlexibleInstances #-} 
 module DDefs where
 import qualified Data.ByteString as BS
 import Data.Serialize
@@ -46,7 +46,7 @@ type ResponseMessage = (ResponseContext, Result)
 -- data DistributedFunction a b = Function (a -> b) | Action (a -> IO b)
 
 
-type FunctionsRegistry = [(String, Parameters -> IO Result)]
+--type FunctionsRegistry = [(String, Parameters -> IO Result)]
 
 data PeerAddr = PeerAddr {
         hostname :: String,
@@ -59,7 +59,15 @@ data RemoteConfig = RemoteConfig {
         handle :: Handle
     }
 
-newtype RemoteIO a = RemoteIO {
-        runRem :: ReaderT RemoteConfig (ErrorT String IO) a
+class RemoteState a where
+    initState :: a
+
+instance RemoteState () where
+    initState = ()
+
+newtype RemoteStIO st a = RemoteIO {
+        runRem :: StateT st (ReaderT RemoteConfig (ErrorT String IO)) a
     } deriving (Monad, MonadIO, MonadReader RemoteConfig, 
-                MonadError String)
+                MonadError String, MonadState st)
+
+type RemoteIO = RemoteStIO ()

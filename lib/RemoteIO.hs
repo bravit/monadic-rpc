@@ -16,9 +16,12 @@ import Data.Serialize.Put
 import Data.Serialize.Get
 import qualified Data.ByteString as BS
 
-runRemote cfg computation = runErrorT $ runReaderT (runRem computation) cfg
+runRemote :: RemoteState st => RemoteConfig -> RemoteStIO st a -> IO (Either String a)
+runRemote cfg computation = 
+    runErrorT $ 
+        runReaderT (evalStateT (runRem computation) initState) cfg
 
-send :: (Serialize a) => a -> RemoteIO ()
+--send :: (Serialize a) => a -> RemoteIO ()
 send msg = do
     cfg <- ask
     liftIO $ do 
@@ -31,7 +34,7 @@ send msg = do
                 putByteString payload
             where size = (fromIntegral $ BS.length payload) :: Word64
 
-receive :: (Serialize a) => RemoteIO a
+receive :: (Serialize a) => RemoteStIO st a
 receive = do
     cfg <- ask
     res <-liftIO $ recvMsgEnv (handle cfg)
@@ -48,11 +51,12 @@ more computation = do
         then return ()
         else computation
 
-remoteError :: String -> RemoteIO a
+--remoteError :: String -> RemoteIO st a
 remoteError err_msg = do
     rp <- remotePeerInfo
     throwError $ err_msg ++ rp
 
+remotePeerInfo :: RemoteStIO st String
 remotePeerInfo = do
     cfg <- ask
     let peer = remotePeer cfg

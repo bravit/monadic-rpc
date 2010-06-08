@@ -16,6 +16,8 @@ data PairII = PairII Integer Integer
 
 $genServerDecls
 
+
+
 fun :: PairII -> PairII
 fun (PairII a b) = (PairII (a+1) (b+1))
 

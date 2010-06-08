@@ -112,8 +112,8 @@ paramsCount _ = 0
 isAction :: Exts.Type -> Bool
 isAction (Exts.TyFun t1 t2) = isAction t2
 isAction (Exts.TyApp t1 t2) = isAction t1
-isAction (Exts.TyCon (Exts.Qual _ (Exts.Ident name))) = name == "RemoteIO"
-isAction (Exts.TyCon (Exts.UnQual (Exts.Ident name))) = name == "RemoteIO"
+isAction (Exts.TyCon (Exts.Qual _ (Exts.Ident name))) = (name == "RemoteStIO") || (name == "RemoteIO")
+isAction (Exts.TyCon (Exts.UnQual (Exts.Ident name))) = (name == "RemoteStIO") || (name == "RemoteIO")
 isAction _ = False
 
 

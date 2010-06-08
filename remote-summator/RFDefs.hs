@@ -1,9 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell,FlexibleInstances #-}
 module RFDefs where
 
 import Data.List
 import Data.Time
-import Control.Monad
+import qualified Control.Monad.State as St
 
 import DDefs
 import ServerUtils
@@ -12,11 +12,19 @@ import System.IO
 
 $genServerDecls
 
-number :: Integer -> IO ()
-number a = appendFile "numbers.txt" (show a ++ "\n")
+instance RemoteState Integer where
+    initState = 0
 
-totalSum :: IO Integer
+instance RemoteState [Integer] where
+    initState = []
+
+number :: Integer -> RemoteStIO [Integer] ()
+number a = do
+    ns <- St.get
+    St.put $ a:ns
+
+totalSum :: RemoteStIO [Integer] Integer
 totalSum = do
-    nn <- readFile "numbers.txt"
-    let res = sum $ map (\s -> (read s :: Integer)) (lines nn)
-    return res
+    ns <- St.get
+    St.put []
+    return $ sum ns

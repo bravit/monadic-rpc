@@ -5,4 +5,4 @@ import ClientUtils
 
 $genClientDecls
 
-ping :: Distributed String
+ping :: RemoteIO String

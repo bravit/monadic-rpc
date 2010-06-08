@@ -9,9 +9,11 @@ import qualified Data.ByteString as BS
 import RemoteIO
 import DDefs
 
-data RemoteFunction a b = Function (a -> b) | Action (a -> RemoteIO b)
+type FuncRegistry st = [([Char], Parameters -> RemoteStIO st Result)]
 
-run_serialized :: (Serialize a, Serialize b) => RemoteFunction a b -> Parameters -> RemoteIO Result
+data RemoteFunction st a b = Function (a -> b) | Action (a -> RemoteStIO st b)
+
+run_serialized :: (Serialize a, Serialize b) => RemoteFunction st a b -> Parameters -> RemoteStIO st Result
 run_serialized (Function func) params 
     = either 
         (remoteError . ("Decoding error (stage 2): "++)) 

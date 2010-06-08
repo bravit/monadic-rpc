@@ -10,7 +10,8 @@ evalSmth n = do
     len <- strlen (show n)
     b <- odd' n
     p <- fun (PairII 42 42)
-    return (n, n2, s, res, len, b, p)
+    t <- time
+    return (n, n2, s, res, len, b, p, t)
 
 main = do
     cfg <- remoteConnectTo $ PeerAddr "localhost" 1500
