@@ -13,7 +13,5 @@ evalSmth n = do
     t <- time
     return (n, n2, s, res, len, b, p, t)
 
-main = do
-    cfg <- remoteConnectTo $ PeerAddr "localhost" 1500
-    runRemote cfg (evalSmth 10) >>= putStrLn.show
-    remoteClose cfg
+main = runRemote (PeerAddr "localhost" 1500) (evalSmth 10) >>= putStrLn.show
+

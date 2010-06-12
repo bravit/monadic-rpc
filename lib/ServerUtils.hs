@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module ServerUtils where
 
 import Network
@@ -5,56 +7,42 @@ import System.IO
 import Control.Concurrent
 import Data.Serialize
 import qualified Data.ByteString as BS
+import Control.Monad
+import Control.Monad.Loops
 
 import RemoteIO
 import DDefs
 
-type FuncRegistry st = [([Char], Parameters -> RemoteStIO st Result)]
+type RemoteAction st a b = a -> RemoteStIO st b
 
-data RemoteFunction st a b = Function (a -> b) | Action (a -> RemoteStIO st b)
-
-run_serialized :: (Serialize a, Serialize b) => RemoteFunction st a b -> Parameters -> RemoteStIO st Result
-run_serialized (Function func) params 
-    = either 
-        (remoteError . ("Decoding error (stage 2): "++)) 
-        (return . encode . func) 
-        (decode params)
-run_serialized (Action action) params
-    = either 
-        (remoteError . ("Decoding error (stage 2): "++)) 
-        (\ pars -> do {res <- action pars; return (encode res)}) 
-        (decode params)
+run_serialized :: (Serialize a, Serialize b) => RemoteAction st a b -> Parameters -> RemoteStIO st Result
+run_serialized action params
+            = either 
+                (remoteError . ("Decoding error (stage 2): "++)) 
+                (liftM encode . action) 
+                (decode params)
 
 serve port funcs = withSocketsDo $
-    do
-       sock <- listenOn (PortNumber port)
-       procRequests sock
+       listenOn (PortNumber port) >>= forever . procRequests
     where
-        procRequests mastersock = 
-              do (connhdl, clientHost, clientPort) <- accept mastersock
-                 putStrLn $ "New connection from " ++ (clientInfo clientHost clientPort)
-                 forkIO $ do 
-                    runRemote 
-                        (RemoteConfig 
-                            (PeerAddr "localhost" port) 
-                            (PeerAddr clientHost clientPort) 
-                            connhdl)
-                        serveClient
-                    return ()
-                 procRequests mastersock
+        procRequests mastersock = do 
+                (connhdl, clientHost, clientPort) <- accept mastersock
+                logConnection clientHost clientPort
+                forkIO $ catch (runRemoteCfg_ 
+                           (RemoteConfig 
+                               (PeerAddr "localhost" port) 
+                               (PeerAddr clientHost clientPort) 
+                               connhdl)
+                           (untilM_ serveClient rIsEOF)) (\ioe -> putStrLn $ show ioe)
+            
+        serveClient = receive >>= call >>= send
 
-        serveClient = do
-            (ctx, params) <- receive
-            res <- callFunction ctx params
-            send res
-            more serveClient
+        call (ctx, params) = maybe 
+                                (return $ unsupported ctx) 
+                                (\f -> liftM (RespCtx True "",) $ f params)
+                                (lookup (oper ctx) funcs)
 
-        callFunction ctx params = do
-             case lookup (oper ctx) funcs of
-                Just f -> do 
-                        result <- f params
-                        return (RespCtx True "", result)
-                Nothing -> do
-                        return (RespCtx False 
-                                    (oper ctx ++ ": unsupported operation"), BS.empty)    
-        clientInfo clientHost clientPort = clientHost ++ ":" ++ show clientPort
+        unsupported ctx = (RespCtx False (oper ctx ++ ": unsupported operation"), BS.empty)
+
+        logConnection clientHost clientPort = 
+            putStrLn $ "New connection from " ++ clientHost ++ ":" ++ show clientPort

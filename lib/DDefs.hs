@@ -43,10 +43,6 @@ type RequestMessage = (RequestContext, Parameters)
 
 type ResponseMessage = (ResponseContext, Result)
 
--- data DistributedFunction a b = Function (a -> b) | Action (a -> IO b)
-
-
---type FunctionsRegistry = [(String, Parameters -> IO Result)]
 
 data PeerAddr = PeerAddr {
         hostname :: String,

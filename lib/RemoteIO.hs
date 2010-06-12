@@ -16,10 +16,20 @@ import Data.Serialize.Put
 import Data.Serialize.Get
 import qualified Data.ByteString as BS
 
-runRemote :: RemoteState st => RemoteConfig -> RemoteStIO st a -> IO (Either String a)
-runRemote cfg computation = 
+runRemote :: RemoteState st => PeerAddr -> RemoteStIO st a -> IO (Either String a)
+runRemote peer computation = do
+    cfg  <- remoteConnectTo peer
+    res <- runRemoteCfg cfg computation
+    remoteClose cfg
+    return res
+
+runRemoteCfg :: RemoteState st => RemoteConfig -> RemoteStIO st a -> IO (Either String a)
+runRemoteCfg cfg computation = 
     runErrorT $ 
         runReaderT (evalStateT (runRem computation) initState) cfg
+
+runRemoteCfg_ cfg computation = runRemoteCfg cfg computation >> return ()
+
 
 --send :: (Serialize a) => a -> RemoteIO ()
 send msg = do
@@ -37,19 +47,19 @@ send msg = do
 receive :: (Serialize a) => RemoteStIO st a
 receive = do
     cfg <- ask
-    res <-liftIO $ recvMsgEnv (handle cfg)
-    either (remoteError . const "Decoding error (stage 1)") return (decode res)
+    res <-liftIO $ try $ recvMsgEnv (handle cfg)
+    case res of 
+        Left ioe -> remoteError $ "Protocol error: "++ show ioe
+        Right res -> either (remoteError . const "Decoding error (stage 1)") return (decode res)
     where 
         recvMsgEnv h = do
             sz_msg <- BS.hGet h DDefs.msgSizeField
-            either (fail . ("Format error: " ++ )) (BS.hGet h . fromIntegral) (runGet getWord64be sz_msg)
+            either fail (BS.hGet h . fromIntegral) (runGet getWord64be sz_msg)
 
-more computation = do
+rIsEOF :: RemoteStIO st Bool
+rIsEOF = do
     cfg <- ask
-    eof <- liftIO $ hIsEOF (handle cfg)
-    if eof 
-        then return ()
-        else computation
+    liftIO $ hIsEOF (handle cfg)
 
 --remoteError :: String -> RemoteIO st a
 remoteError err_msg = do
@@ -68,3 +78,5 @@ remoteConnectTo peer = do
     return (RemoteConfig (PeerAddr "" 0) peer conn)
 
 remoteClose cfg = hClose (handle cfg)
+
+

@@ -11,3 +11,6 @@ instance RemoteState Integer where
 number :: Integer -> RemoteIO ()
 
 totalSum :: RemoteIO Integer
+
+restart :: RemoteIO ()
+

@@ -26,5 +26,7 @@ number a = do
 totalSum :: RemoteStIO [Integer] Integer
 totalSum = do
     ns <- St.get
-    St.put []
     return $ sum ns
+
+restart :: RemoteStIO [Integer] ()
+restart = St.put []    

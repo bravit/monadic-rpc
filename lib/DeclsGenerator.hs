@@ -90,10 +90,10 @@ genRegisteredFunctions decls = [d| registeredFunctions = $funcList |]
         funcList = listE $ map name2Tup (funcNamesWithTypes decls)
         name2Tup (name, t)
             = [| (name, 
-                $(dyn "run_serialized") 
-                    ($(conE $ mkName $ funcKind t) $(calledFunc name (paramsCount t)))) |]
-        funcKind t | isAction t = "Action"
-        funcKind t | otherwise = "Function"
+                $(dyn "run_serialized") $ $(funcKind t) ) |]
+            where
+                funcKind t | isAction t = [| $(calledFunc name (paramsCount t)) |]
+                funcKind t | otherwise = [| return . $(calledFunc name (paramsCount t))|]
         calledFunc name 0 = [| (const :: a->()->a) $(dyn name) |]
         calledFunc name 1 = [| $(dyn name) |]
         calledFunc name n = [| $(uncurries (n-1)) $(dyn name) |]
